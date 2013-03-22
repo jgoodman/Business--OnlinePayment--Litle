@@ -116,15 +116,23 @@ SKIP: {
         {
             my $tx = Business::OnlinePayment->new("Litle", @opts);
             $tx->content(%content);
-            tx_check(
-                $tx,
-                desc          => "Auth Only",
-                is_success    => $resp_validation->{'Message'} eq 'Partially Approved' ? 1 : 0,
-                result_code   => $resp_validation->{'Response Code'},
-                error_message => $resp_validation->{'Message'},
-                #authorization => $resp_validation->{'Auth Code'},
-                approved_amount => $resp_validation->{'ApprovedAmount'},
-            );
+
+            eval {
+                tx_check(
+                    $tx,
+                    desc          => "Auth Only",
+                    is_success    => $resp_validation->{'Message'} eq 'Partially Approved' ? 1 : 0,
+                    result_code   => $resp_validation->{'Response Code'},
+                    error_message => $resp_validation->{'Message'},
+                    #authorization => $resp_validation->{'Auth Code'},
+                    approved_amount => $resp_validation->{'ApprovedAmount'},
+                );
+            };
+
+            if($@) {
+                note "You may want to check the network connection to the Litle servers. Make sure your firewall is configured to allow these connections. It is possible that the Litle servers are unreachable for other reasons.";
+                BAIL_OUT( 'Possible Timeout was Detected.' );
+            }
 
             $auth_resp{ $account->{'OrderId'} } = $tx->order_number if $tx->is_success;
         }
